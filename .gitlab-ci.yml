@@ -1,0 +1,24 @@
+stages:
+  - Deploy
+
+deploy_dev:
+  stage: Deploy
+  image: google/cloud-sdk:alpine
+  environment:
+    name: dev
+    url: https://api-crousorama.appspot.com
+  only:
+    refs:
+      - tags
+
+  except:
+  - /^issue-.*$/
+  script:
+  - gcloud --version
+  - gcloud components update --quiet
+  - cp environments/PROD/__init__.py config/__init__.py
+  - echo $CD_SERVICE_ACCOUNT > /tmp/$CI_PIPELINE_ID.json
+  - gcloud auth activate-service-account --key-file /tmp/$CI_PIPELINE_ID.json
+  - gcloud app deploy api.yaml --project $PROJECT_ID --version=$(date +%d-%m-%Y-dev) --quiet
+  after_script:
+  - rm /tmp/$CI_PIPELINE_ID.json
