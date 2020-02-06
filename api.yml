@@ -1,2 +1,4 @@
 runtime: python37
 service: api
+inbound_services:
+  - warmup
