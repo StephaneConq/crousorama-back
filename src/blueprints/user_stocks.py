@@ -16,3 +16,10 @@ def insert(account_type, email):
 def get_all(email):
     fs_service = Firestore()
     return jsonify({'stocks': fs_service.get_user_stocks(email)}), 200
+
+
+@stocks_users.route('/<account_type>/<email>/<symbol>', methods=['DELETE'])
+def delete(account_type, email, symbol):
+    fs_service = Firestore()
+    fs_service.delete_stock(account_type, email, symbol)
+    return {'message': 'ok'}, 200

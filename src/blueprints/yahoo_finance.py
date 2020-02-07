@@ -11,7 +11,7 @@ finance = Blueprint('finance', __name__)
 @finance.route('/search')
 def query():
     search = request.args.get('q')
-    req = requests.get('https://query1.finance.yahoo.com/v1/finance/search?q={}&quotesCount=6&enableFuzzyQuery=false'
+    req = requests.get('https://query1.finance.yahoo.com/v1/finance/search?q={}&quotesCount=10&enableFuzzyQuery=false'
                        .format(search))
     return jsonify(req.json().get('quotes', [])), 200
 

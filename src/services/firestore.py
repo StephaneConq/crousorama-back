@@ -24,6 +24,16 @@ class Firestore:
             user_stocks = self._db.collection(u'stocks').document(email).get()
             return user_stocks.to_dict() if user_stocks.to_dict() else {'pea': [], 'titres': []}
 
+        def delete_stock(self, account, email, symbol):
+            doc_ref = self._db.collection('stocks').document(email)
+            doc_dict = doc_ref.get().to_dict()
+            for idx, stock in enumerate(doc_dict[account]):
+                if stock['symbol'] == symbol:
+                    del doc_dict[account][idx]
+                    break
+            doc_ref.set(doc_dict)
+            return "ok"
+
     instance = None
 
     def __init__(self):
