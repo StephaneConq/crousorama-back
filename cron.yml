@@ -1,5 +1,5 @@
 cron:
-#  - url: /_ah/warmup
-#    target: api
-#    schedule: every 2 mins
-#    description: warmup so the api is always responsive
+  - url: /_ah/warmup
+    target: api
+    schedule: every 2 mins
+    description: warmup so the api is always responsive

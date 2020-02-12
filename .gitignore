@@ -21,4 +21,4 @@ htmlcov/
 .coverage
 .coverage.*
 *,cover
-*/__pycache__
+src/blueprints/__pycache__/yahoo_finance.cpython-37.pyc
