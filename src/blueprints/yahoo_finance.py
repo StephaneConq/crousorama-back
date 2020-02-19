@@ -4,6 +4,7 @@ import yfinance as yf
 import pandas as pd
 from src.config import CONFIG
 import json
+from bs4 import BeautifulSoup, NavigableString, Tag
 
 finance = Blueprint('finance', __name__)
 
@@ -52,3 +53,59 @@ def get_history(symbol):
 def get_news():
     req = requests.get('https://fr.finance.yahoo.com/_finance_doubledown/api/resource/content;fetchNewAttribution=true;getDetailView=true;getFullLcp=false;imageResizer=null;relatedContent=%7B%22enabled%22%3Atrue%7D;site=finance;ssEP=;useSlingstoneLcp=true;uuids=%5B%22f7967a86-8594-3bcb-b460-ca2c31333096%22%2C%22fb7151b7-929f-38f4-bd98-ec39e781778a%22%2C%220bd4e665-7d52-3533-947e-bdc6fb1eb919%22%2C%220f5b6945-9a5e-39a9-8024-600a6f4a70d9%22%2C%228a6bb89c-02e4-38fe-8bfc-9c795027e628%22%2C%229dc4bcb5-8f9d-3b0c-98c4-bcfbec4b1715%22%2C%22906020e7-bc29-39ac-95e8-817ed75c9db8%22%2C%22f29dc5e8-8b84-3181-a4f5-71379013f366%22%2C%22bc63c31c-f013-3ec8-9486-28e0d0b2ba59%22%2C%22062f3c6e-bcaa-3d51-828f-32fe2a13a590%22%2C%22903aa9e3-3669-326a-9607-2a604b3ef6ef%22%2C%22245fe9da-1e93-3481-b26e-bb42f42b1ced%22%2C%222d9d53ff-e407-35fb-944c-6469b63e735b%22%2C%22e918467c-ca8d-3924-b672-a0d508b307d7%22%2C%2258006a11-7b77-309d-b624-519893c5b67d%22%2C%222d6424ba-b7d1-3b90-9574-ec13dafeadf0%22%5D?bkt=fdstr-fr-ncp&device=desktop&feature=canvassOffnet%2CccOnMute%2Cdebouncesearch100%2CdeferDarla%2CecmaModern%2CemptyServiceWorker%2CenableCMP%2CenableConsentData%2CenableTheming%2CenableNavFeatureCue%2CenableGuceJs%2CenableGuceJsOverlay%2CenablePrivacyUpdate%2CenableVideoURL%2CnewContentAttribution%2CnewLogo%2CrelatedVideoFeatureOff%2CvideoNativePlaylist%2CenablePremiumFinancials%2CenableCCPAFooter%2CenhanceAddToWL%2CenableStageAds%2CsponsoredAds&intl=fr&lang=fr-FR&partner=none&prid=djf61dlf4acj9&region=FR&site=finance&tz=Europe%2FParis&ver=0.102.3258&returnMeta=true')
     return jsonify(req.json().get('data', {}).get('items', [])), 200
+
+
+@finance.route('/agenda')
+def get_agenda():
+    req = requests.get('https://www.boursier.com/agenda-boursier/')
+    html = req.text
+    soup = BeautifulSoup(html)
+    agenda = soup.find('div', {'id': 'agenda-bourse'})
+    titles = BeautifulSoup(str(agenda)).findAll('h2')
+    tables = BeautifulSoup(str(agenda)).findAll('table')
+    agenda_dict = {}
+    title_headers = []
+    for t in titles:
+        title_headers.append(str(t.string))
+    for idx, t in enumerate(tables):
+        tmp = {}
+        rows = BeautifulSoup(str(t)).findAll('tr')
+        current_row = ''
+        current_country = ''
+        for r in rows:
+            if len(r.contents) == 1:
+                current_row = str(r.contents[0].string)
+                if current_row.startswith('Sociétés'):
+                    tmp[current_row] = []
+                else:
+                    tmp[current_row] = {}
+            if len(r.contents) == 6:
+                if current_row.startswith('Société'):
+                    tmp[current_row].append({
+                        'name': str(r.contents[0].text),
+                        'event': str(clean(r.contents[2].text))
+                    })
+                else:
+                    current_country = str(r.contents[0].string)
+                    if current_country not in tmp[current_row]:
+                        tmp[current_row][current_country] = []
+                    tmp[current_row][current_country].append(clean(r.contents[2].next))
+            if len(r.contents) == 7:
+                if current_row.startswith('Sociétés'):
+                    tmp[current_row].append({
+                        'name': str(r.contents[1].string),
+                        'event': str(clean(r.contents[3].text))
+                    })
+                else:
+                    clean_value = clean_with_strong_html(r.contents[3])
+                    tmp[current_row][current_country].append(clean_value)
+        agenda_dict[title_headers[idx]] = tmp
+    return jsonify(agenda_dict), 200
+
+
+def clean(string):
+    return string.replace('\t', '').replace('\r', '').replace('\n', '')
+
+
+def clean_with_strong_html(tag_array):
+    return tag_array.contents[0] + ' : ' + clean(tag_array.contents[3].string)
