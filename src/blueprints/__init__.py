@@ -1,3 +1,4 @@
-from .yahoo_finance import finance
-from .user_stocks import stocks_users
-from .lesechos import lesechos_news
+from .yahoo_finance import finance_blueprint
+from .user_stocks import stocks_users_blueprint
+from .news import news_blueprint
+from .calendar import calendar_blueprint
