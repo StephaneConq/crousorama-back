@@ -11,7 +11,7 @@ def get_news():
     r = requests.get('https://www.lesechos.fr/bourse')
     html = r.text
     soup = BeautifulSoup(html)
-    news_html = soup.findAll("a", {"class": "XMwLM"})
+    news_html = soup.findAll("a", {"class": "dfBjtz"})
     for n_html in news_html:
         tmp_news = {
             'url': n_html.attrs['href']
@@ -19,9 +19,9 @@ def get_news():
         first_child = n_html.contents[0]
         tmp_news['title'] = first_child.contents[1].next
         link_soup = BeautifulSoup(str(n_html))
-        dates = link_soup.findAll("span", {"class": "caIHMU"})
+        dates = link_soup.findAll("span", {"class": "gfNWwB"})
         tmp_news['publication_date'] = dates[0].next
-        summary = link_soup.findAll("div", {"class": "bAHvz"})
+        summary = link_soup.findAll("div", {"class": "ewoSIL"})
         tmp_news['summary'] = summary[0].next
         news.append(tmp_news)
     return jsonify(news), 200
