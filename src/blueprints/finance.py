@@ -1,9 +1,6 @@
+from bs4 import BeautifulSoup
 from flask import Blueprint, request, jsonify
 import requests
-import yfinance as yf
-import pandas as pd
-from src.config import CONFIG
-import json
 
 
 finance_blueprint = Blueprint('finance', __name__)
@@ -34,16 +31,26 @@ def get_by_symbol(symbol):
     return jsonify(results), 200
 
 
-@finance_blueprint.route('/indice/<symbol>/history')
-def get_history(symbol):
-    time = request.args.get('period')
-    stock = yf.Ticker(symbol)
-    history = stock.history(period=time)
-    df = pd.DataFrame(history,
-                      columns=CONFIG.get('history'))
-    history_json = df.to_json(orient='records')
-    try:
-        history_json = json.loads(history_json)
-    except Exception as e:
-        history_json = []
-    return jsonify({"history": history_json}), 200
+@finance_blueprint.route('/palmares')
+def get_palmares():
+    req = requests.get('https://m.investir.lesechos.fr/marches/palmares/palmares.php')
+    html = req.text
+    soup = BeautifulSoup(html)
+    blocs = soup.findAll('div', {'class': ['row', 'indice']})
+    rows = []
+    for b in blocs:
+        row_soup = BeautifulSoup(str(b))
+        tmp = {
+            'indice': row_soup.find('div', {'class': 'nom-indice'}).text,
+            'meta': row_soup.find('span', {'class': 'place-heure'}).text,
+            'value': row_soup.find('span', {'class': 'val-indice'}).text,
+            'variation': row_soup.find('span', {'class': 'var-indice'}).text,
+        }
+        if not palmares_already_pushed(tmp['indice'], rows):
+            rows.append(tmp)
+    return jsonify(rows)
+
+
+def palmares_already_pushed(quote, list):
+    matches = [x for x in list if x['indice'] == quote]
+    return len(matches) > 0
