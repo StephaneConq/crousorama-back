@@ -1,32 +1,41 @@
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, request
 import requests
 from bs4 import BeautifulSoup
+
+from src.config import CONFIG
 
 news_blueprint = Blueprint('news', __name__)
 
 
 @news_blueprint.route('')
 def get_news():
+    """
+    get news
+    :return: dict {
+        img: str,
+        url: str,
+        title: str,
+        summary: str,
+        publication_date: str
+    }
+    """
     news = []
-    r = requests.get('https://www.lemonde.fr/bourse/')
+    page = request.args.get('page') or 1
+    r = requests.get('https://www.reuters.com/news/archive/businessnews?view=page&page={}&pageSize=10'.format(page))
     html = r.text
     soup = BeautifulSoup(html)
-    news_html = soup.findAll("section", {"class": "teaser--inline-picture"})
+    news_html = soup.findAll("article", {"class": "story"})
     for n_html in news_html:
-        tmp_news = {}
-        img_soup = BeautifulSoup(str(n_html)).findAll("img")
-        tmp_news["img"] = img_soup[1].attrs["src"]
-        news_soup = BeautifulSoup(str(n_html)).find("a", {"class": "teaser__link"})
-        tmp_news["url"] = news_soup.attrs["href"]
-        tmp_news["title"] = BeautifulSoup(str(news_soup)).find("h3", {"class": "teaser__title"}).text
-        tmp_news["summary"] = BeautifulSoup(str(news_soup)).find("p", {"class": "teaser__desc"}).text
-        meta_soup = BeautifulSoup(str(n_html)).find("p", {"class": "meta__publisher"})
-        tmp_news["publication_date"] = BeautifulSoup(str(meta_soup)).find('span', {"class": "meta__date"}).text
-        try:
-            tmp_news["author"] = BeautifulSoup(str(meta_soup)).find('a', {"class": "article__author-link"}).text
-        except AttributeError:
-            tmp_news["author"] = BeautifulSoup(str(meta_soup)).find('span', {"class": "meta__author"}).text
-            print()
+        article_soup = BeautifulSoup(str(n_html))
+        tmp_news = {
+            "img": clean_url(article_soup.findAll("img")[0].attrs["org-src"])
+            if "org-src" in article_soup.findAll("img")[0].attrs else CONFIG["news_img"],
+            "url": "https://www.reuters.com" + article_soup.findAll("a")[0].attrs["href"],
+            "title": clean(article_soup.findAll("h3")[0].text),
+            "summary": article_soup.findAll("p")[0].text if len(article_soup.findAll("p")) > 0 else "",
+            "publication_date": clean(article_soup.findAll("time")[0].text)
+            if len(article_soup.findAll("time")) > 0 else ""
+        }
         news.append(tmp_news)
     return jsonify(news), 200
 
@@ -68,3 +77,7 @@ def clean(string):
     if len(tmp.split('Les recos des analystes :')) > 1:
         tmp = tmp.split('Les recos des analystes :')[1]
     return tmp
+
+
+def clean_url(string: str):
+    return string.replace("amp;", "")
