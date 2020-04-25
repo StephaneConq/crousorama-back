@@ -2,8 +2,6 @@ from flask import Blueprint, jsonify, request
 import requests
 from bs4 import BeautifulSoup
 
-from src.config import CONFIG
-
 news_blueprint = Blueprint('news', __name__)
 
 
@@ -21,22 +19,23 @@ def get_news():
     """
     news = []
     page = request.args.get('page') or 1
-    r = requests.get('https://www.reuters.com/news/archive/businessnews?view=page&page={}&pageSize=10'.format(page))
+    r = requests.get('https://www.boursedirect.fr/fr/actualites/timeline/flux/aujourdhui/{}/undefined'.format(page))
     html = r.text
     soup = BeautifulSoup(html)
-    news_html = soup.findAll("article", {"class": "story"})
-    for n_html in news_html:
-        article_soup = BeautifulSoup(str(n_html))
-        tmp_news = {
-            "img": clean_url(article_soup.findAll("img")[0].attrs["org-src"])
-            if "org-src" in article_soup.findAll("img")[0].attrs else CONFIG["news_img"],
-            "url": "https://www.reuters.com" + article_soup.findAll("a")[0].attrs["href"],
-            "title": clean(article_soup.findAll("h3")[0].text),
-            "summary": article_soup.findAll("p")[0].text if len(article_soup.findAll("p")) > 0 else "",
-            "publication_date": clean(article_soup.findAll("time")[0].text)
-            if len(article_soup.findAll("time")) > 0 else ""
-        }
-        news.append(tmp_news)
+    articles = soup.findAll('div', {'class': 'timeline-heading'})
+    for a in articles:
+        a_soup = BeautifulSoup(str(a))
+        day = a_soup.find('span', {'class': 'publishDay'}).text
+        month = a_soup.find('span', {'class': 'text-muted'}).text
+        hour = a_soup.find('span', {'class': 'publishHour'}).text
+        date = '{} {} - {}'.format(day, month, hour)
+        news.append({
+            'img': 'https://www.boursedirect.fr' + a_soup.find('img').attrs['src'],
+            'publication_date': date,
+            'url': 'https://www.boursedirect.fr/' + a_soup.find('a').attrs['href'],
+            'title': a_soup.find('h2', {'class': 'timeline-title'}).text,
+            'summary': a_soup.findAll('p')[1].text,
+        })
     return jsonify(news), 200
 
 
