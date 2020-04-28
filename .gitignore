@@ -22,3 +22,4 @@ htmlcov/
 .coverage.*
 *,cover
 src/blueprints/__pycache__/yahoo_finance.cpython-37.pyc
+src/config/credentials/service-account.json
