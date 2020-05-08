@@ -121,7 +121,10 @@ def get_cours(stock_id):
     for item_row in html_soup.findAll('div', {'class': 'item-row'}):
         text_splitted = item_row.text.split(' :')
         key = remove_jumps(text_splitted[0])
-        value = remove_jumps(text_splitted[1])
+        try:
+            value = remove_jumps(text_splitted[1])
+        except Exception:
+            value = '-'
         tmp[key] = value
     return tmp
 
