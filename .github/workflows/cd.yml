@@ -37,7 +37,7 @@ jobs:
         export_default_credentials: true
 
     - name: Copy service account
-      run: cp ${{ secrets.APP_SERVICE_ACCOUNT }} ./src/config/credentials/service-account.json
+      run: echo ${{ secrets.APP_SERVICE_ACCOUNT }} > ./src/config/credentials/service-account.json
 
 #    - run: gsutil cp gs://pyrotracker-credentials/back/firebase-service-account.json ./credentials/firebase-service-account.json
 
