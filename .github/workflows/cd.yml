@@ -36,9 +36,8 @@ jobs:
         service_account_key: ${{ secrets.GCP_SA_KEY }}
         export_default_credentials: true
 
-    - name: Copy service account
-      run: echo ${{ secrets.APP_SERVICE_ACCOUNT }} > ./src/config/credentials/service-account.json
+    - name: Copy app service account
+      run: gsutil cp gs://crousorama-credentials/back/service-account.json ./src/config/credentials/service-account.json
 
-#    - run: gsutil cp gs://pyrotracker-credentials/back/firebase-service-account.json ./credentials/firebase-service-account.json
-
-    - run: gcloud app deploy api.yml --quiet --project=${{ secrets.GCP_PROJECT_ID }}
+    - name: Deploy
+      run: gcloud app deploy api.yml --quiet --project=${{ secrets.GCP_PROJECT_ID }}
